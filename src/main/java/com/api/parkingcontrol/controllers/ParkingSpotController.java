@@ -2,6 +2,7 @@ package com.api.parkingcontrol.controllers;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.List;
 
 import org.springframework.beans.BeanUtils;
 import org.springframework.http.HttpStatus;
@@ -32,15 +33,25 @@ public class ParkingSpotController {
 
   @PostMapping
   public ResponseEntity<Object> saveParkingSpot(@RequestBody @Valid ParkingSpotDto parkingSpotDTO) {
+    if (parkingSpotService.existsByLicensePlateCar(parkingSpotDTO.getLicensePlateCar())) {
+      return ResponseEntity.status(HttpStatus.CONFLICT).body("Car already registered!");
+    }
+    if (parkingSpotService.existsByParkingSpotNumber(parkingSpotDTO.getParkingSpotNumber())) {
+      return ResponseEntity.status(HttpStatus.CONFLICT).body("Parking spot already registered!");
+    }
+    if (parkingSpotService.existsByApartmentAndBlock(parkingSpotDTO.getApartment(), parkingSpotDTO.getBlock())) {
+      return ResponseEntity.status(HttpStatus.CONFLICT).body("Apartment already registered!");
+    }
+
     var parkingSpotModel = new ParkingSpotModel();
     BeanUtils.copyProperties(parkingSpotDTO, parkingSpotModel);
     parkingSpotModel.setRegistrationDate(LocalDateTime.now(ZoneId.of("UTC")));
     return ResponseEntity.status(HttpStatus.CREATED).body(parkingSpotService.save(parkingSpotModel));
   }
 
-  @GetMapping("/in")
-  public String index() {
-    return "Hello World!";
+  @GetMapping
+  public ResponseEntity<List<ParkingSpotModel>> getAllParkingSpot() {
+    return ResponseEntity.status(HttpStatus.OK).body(parkingSpotService.findAll());
   }
 
 }
